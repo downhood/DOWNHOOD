@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -14,18 +13,18 @@ export default function AddressPage() {
   });
 
   const handleInputChange = (
-  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-) => {
-  const { name, value } = e.target;
-  setFormData(prev => ({ ...prev, [name]: value }));
-};
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
-  const isFormValid = formData.firstName && formData.lastName && formData.phone && 
-                     formData.address && formData.landmark;
+  const isFormValid = formData.firstName && formData.lastName && formData.phone &&
+                      formData.address && formData.landmark;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-gray-900 to-black text-white">
-      {/* Professional Logo Header */}
+      {/* Logo */}
       <div className="fixed top-4 left-4 z-50">
         <Link href="/">
           <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-2xl hover:scale-105 transition-transform duration-300 cursor-pointer">
@@ -57,14 +56,13 @@ export default function AddressPage() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Address Form */}
-          <div className="lg:col-span-2">
+          <div className="col-span-1 lg:col-span-2">
             <h1 className="text-3xl font-bold mb-8">Shipping Address</h1>
 
             <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
               <form className="space-y-6">
-                {/* Name Fields */}
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">First Name *</label>
@@ -90,7 +88,6 @@ export default function AddressPage() {
                   </div>
                 </div>
 
-                {/* Contact Info */}
                 <div>
                   <label className="block text-sm font-medium mb-2">Phone Number *</label>
                   <input
@@ -104,7 +101,6 @@ export default function AddressPage() {
                   />
                 </div>
 
-                {/* Address */}
                 <div>
                   <label className="block text-sm font-medium mb-2">Full Address *</label>
                   <textarea
@@ -135,7 +131,7 @@ export default function AddressPage() {
           </div>
 
           {/* Order Summary */}
-          <div className="lg:col-span-1">
+          <div className="col-span-1">
             <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700 sticky top-24">
               <h2 className="text-xl font-semibold mb-6">Order Summary</h2>
               
@@ -201,4 +197,4 @@ export default function AddressPage() {
       </div>
     </div>
   );
-}
+              }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 interface DesignCanvasProps {
   selectedColor: string;
@@ -12,7 +12,7 @@ export default function DesignCanvas({ selectedColor, selectedStyle, uploadedIma
   const [imagePosition, setImagePosition] = useState({ x: 50, y: 40 });
   const [imageSize, setImageSize] = useState(30);
 
-  const getShirtImage = () => {
+  const shirtImageUrl = useMemo(() => {
     const baseUrl = 'https://readdy.ai/api/search-image?';
     const params = new URLSearchParams({
       query: `${selectedStyle} mockup, ${selectedColor === '#000000' ? 'black' : selectedColor === '#FFFFFF' ? 'white' : 'colored'} ${selectedStyle}, front view, clean background, product mockup, apparel template`,
@@ -22,19 +22,31 @@ export default function DesignCanvas({ selectedColor, selectedStyle, uploadedIma
       orientation: 'portrait'
     });
     return baseUrl + params.toString();
-  };
+  }, [selectedColor, selectedStyle]);
 
   return (
     <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+      {/* ✅ Updated Heading */}
+      <h1 className="text-2xl font-bold text-white mb-6">Design Your Own Hood</h1>
+
       <h3 className="text-lg font-semibold mb-4">Design Preview</h3>
 
       <div className="relative bg-gray-900 rounded-lg aspect-[4/5] overflow-hidden border-2 border-gray-600">
         {/* Shirt Background */}
-        <img
-          src={getShirtImage()}
-          alt={`${selectedStyle} preview`}
-          className="w-full h-full object-cover"
-        />
+        {uploadedImage ? (
+          <img
+            src={shirtImageUrl}
+            alt={`${selectedStyle} preview`}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center z-10 bg-gray-900">
+            <div className="text-center text-gray-400">
+              <i className="ri-image-line text-4xl mb-2 block"></i>
+              <p>Upload an image to see your design</p>
+            </div>
+          </div>
+        )}
 
         {/* Uploaded Design Overlay */}
         {uploadedImage && (
@@ -91,15 +103,6 @@ export default function DesignCanvas({ selectedColor, selectedStyle, uploadedIma
           </div>
         )}
       </div>
-
-      {!uploadedImage && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center text-gray-400">
-            <i className="ri-image-line text-4xl mb-2 block"></i>
-            <p>Upload an image to see your design</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

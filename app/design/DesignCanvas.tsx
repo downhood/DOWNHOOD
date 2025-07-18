@@ -1,152 +1,105 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 
-const COLORS = ['#000000', '#FFFFFF', '#FF0000', '#0000FF', '#FFFF00'];
+interface DesignCanvasProps {
+  selectedColor: string;
+  selectedStyle: string;
+  uploadedImage: string | null;
+}
 
-export default function DesignCanvas() {
-  const [selectedColor, setSelectedColor] = useState(COLORS[0]);
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [position, setPosition] = useState({ x: 50, y: 50 });
-  const [size, setSize] = useState(30);
-  const [rotation, setRotation] = useState(0);
-  const imageRef = useRef<HTMLDivElement>(null);
+export default function DesignCanvas({ selectedColor, selectedStyle, uploadedImage }: DesignCanvasProps) {
+  const [imagePosition, setImagePosition] = useState({ x: 50, y: 40 });
+  const [imageSize, setImageSize] = useState(30);
 
-  const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
-    const parent = e.currentTarget.parentElement;
-    if (!parent) return;
-    const rect = parent.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setPosition({
-      x: Math.min(85, Math.max(15, x)),
-      y: Math.min(85, Math.max(15, y)),
+  const getShirtImage = () => {
+    const baseUrl = 'https://readdy.ai/api/search-image?';
+    const params = new URLSearchParams({
+      query: `${selectedStyle} mockup, ${selectedColor === '#000000' ? 'black' : selectedColor === '#FFFFFF' ? 'white' : 'colored'} ${selectedStyle}, front view, clean background, product mockup, apparel template`,
+      width: '400',
+      height: '500',
+      seq: `${selectedStyle}-${selectedColor}`,
+      orientation: 'portrait'
     });
-  };
-
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (ev) => setUploadedImage(ev.target?.result as string);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleDelete = () => {
-    setUploadedImage(null);
-    setSize(30);
-    setRotation(0);
+    return baseUrl + params.toString();
   };
 
   return (
-    <div className="bg-[#0e0e0e] text-white min-h-screen p-6">
-      <h2 className="text-2xl font-bold text-center mb-6">🎨 Create Your T-Shirt</h2>
+    <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
+      <h3 className="text-lg font-semibold mb-4">Design Preview</h3>
 
-      {/* Preview Area */}
-      <div className="relative w-[300px] h-[400px] mx-auto">
-        {/* T-shirt Image */}
+      <div className="relative bg-gray-900 rounded-lg aspect-[4/5] overflow-hidden border-2 border-gray-600">
+        {/* Shirt Background */}
         <img
-          src="/A_digital_photograph_showcases_a_plain_white_short.png"
-          alt="T-shirt"
-          className="w-full h-full object-contain z-0"
+          src={getShirtImage()}
+          alt={`${selectedStyle} preview`}
+          className="w-full h-full object-cover"
         />
 
-        {/* Color Overlay */}
-        <div
-          className="absolute inset-0 transition-colors duration-700 mix-blend-multiply pointer-events-none rounded-lg"
-          style={{ backgroundColor: selectedColor }}
-        />
-
-        {/* Red Dotted Print Area */}
-        <div className="absolute top-[25%] left-[10%] w-[80%] h-[60%] border-2 border-dotted border-red-500 pointer-events-none z-10" />
-
-        {/* Sticker */}
+        {/* Uploaded Design Overlay */}
         {uploadedImage && (
           <div
-            ref={imageRef}
-            draggable
-            onDragEnd={handleDrag}
-            className="absolute cursor-move z-20"
+            className="absolute cursor-move"
             style={{
-              left: `${position.x}%`,
-              top: `${position.y}%`,
-              width: `${size}%`,
-              transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+              left: `${imagePosition.x}%`,
+              top: `${imagePosition.y}%`,
+              width: `${imageSize}%`,
+              transform: 'translate(-50%, -50%)'
+            }}
+            draggable
+            onDragEnd={(e) => {
+              const rect = e.currentTarget.parentElement?.getBoundingClientRect();
+              if (rect) {
+                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                const y = ((e.clientY - rect.top) / rect.height) * 100;
+                setImagePosition({
+                  x: Math.max(15, Math.min(85, x)),
+                  y: Math.max(15, Math.min(85, y))
+                });
+              }
             }}
           >
             <img
               src={uploadedImage}
-              alt="Design"
-              className="w-full h-auto"
+              alt="Custom design"
+              className="w-full h-auto max-w-none"
               style={{ aspectRatio: '1' }}
             />
-            {/* Controls */}
-            <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex gap-2 z-30">
-              <button
-                onClick={handleDelete}
-                className="bg-red-600 px-2 py-1 rounded text-xs"
-              >
-                ❌
-              </button>
-              <button
-                onClick={() => setRotation((r) => r + 15)}
-                className="bg-blue-600 px-2 py-1 rounded text-xs"
-              >
-                ↻
-              </button>
+          </div>
+        )}
+
+        {/* Design Controls */}
+        {uploadedImage && (
+          <div className="absolute bottom-4 left-4 right-4 bg-black/80 rounded-lg p-3">
+            <div className="flex items-center gap-4">
+              <label className="text-xs text-gray-300">Size:</label>
               <input
                 type="range"
                 min="10"
-                max="60"
-                value={size}
-                onChange={(e) => setSize(Number(e.target.value))}
-                className="w-20"
+                max="50"
+                value={imageSize}
+                onChange={(e) => setImageSize(Number(e.target.value))}
+                className="flex-1"
               />
+              <button
+                onClick={() => setImagePosition({ x: 50, y: 40 })}
+                className="!rounded-button bg-gray-700 px-3 py-1 text-xs hover:bg-gray-600 transition-colors"
+              >
+                Center
+              </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Color Selection */}
-      <div className="flex justify-center gap-4 mt-6 mb-4">
-        {COLORS.map((color) => (
-          <div
-            key={color}
-            onClick={() => setSelectedColor(color)}
-            className={`w-8 h-8 rounded-full border-2 cursor-pointer transition ${
-              selectedColor === color ? 'ring-2 ring-white' : ''
-            }`}
-            style={{ backgroundColor: color }}
-          />
-        ))}
-      </div>
-
-      {/* Upload Button */}
-      <div className="text-center mb-6">
-        <label className="bg-orange-500 cursor-pointer text-white font-medium px-5 py-2 rounded-md hover:bg-orange-600 transition">
-          Add Your Design
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleUpload}
-          />
-        </label>
-      </div>
-
-      {/* Our Designs */}
-      <h3 className="text-lg font-semibold text-center mb-4">OUR DESIGNS</h3>
-      <div className="grid grid-cols-4 gap-3 max-w-[320px] mx-auto">
-        {Array.from({ length: 8 }).map((_, index) => (
-          <div
-            key={index}
-            className="bg-[#1e1e1e] border border-gray-600 text-center text-sm py-4 rounded-md"
-          >
-            Sticker {index + 1}
+      {!uploadedImage && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center text-gray-400">
+            <i className="ri-image-line text-4xl mb-2 block"></i>
+            <p>Upload an image to see your design</p>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -21,7 +21,7 @@ export default function DesignCanvas({
 
       <div className="bg-gray-800 rounded-lg p-4 shadow-lg">
         <h2 className="text-xl font-semibold text-white mb-2">Design Preview</h2>
-        
+
         <div
           className={`relative w-full aspect-[3/4] border-2 border-dashed rounded-md flex items-center justify-center ${
             hovered ? 'border-blue-500' : 'border-gray-600'
@@ -29,9 +29,9 @@ export default function DesignCanvas({
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >
-          {/* 👕 T-shirt background always shows */}
+          {/* 👕 T-shirt background */}
           <img
-            src="/mockups/tshirt.png" // OR use remote image: "https://..."
+            src="/tshirt.png"
             alt="T-shirt mockup"
             className="absolute top-0 left-0 w-full h-full object-contain opacity-30 pointer-events-none"
           />

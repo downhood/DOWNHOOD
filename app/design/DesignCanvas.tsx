@@ -1,105 +1,48 @@
 'use client';
 
-import { useState } from 'react';
+import { useState } from 'react'; import Image from 'next/image';
 
-interface DesignCanvasProps {
-  selectedColor: string;
-  selectedStyle: string;
-  uploadedImage: string | null;
-}
+const TShirtDesigner = () => { const [shirtColor, setShirtColor] = useState('white'); const colors = [ { name: 'black', hex: '#000000' }, { name: 'white', hex: '#ffffff' }, { name: 'red', hex: '#ff0000' }, { name: 'blue', hex: '#0000ff' }, { name: 'yellow', hex: '#ffff00' }, ];
 
-export default function DesignCanvas({ selectedColor, selectedStyle, uploadedImage }: DesignCanvasProps) {
-  const [imagePosition, setImagePosition] = useState({ x: 50, y: 40 });
-  const [imageSize, setImageSize] = useState(30);
+return ( <div className="min-h-screen bg-[#fdfcf9] flex flex-col items-center p-4"> <h1 className="text-2xl font-semibold mb-4">🎨 Create Your T-Shirt</h1>
 
-  const getShirtImage = () => {
-    const baseUrl = 'https://readdy.ai/api/search-image?';
-    const params = new URLSearchParams({
-      query: `${selectedStyle} mockup, ${selectedColor === '#000000' ? 'black' : selectedColor === '#FFFFFF' ? 'white' : 'colored'} ${selectedStyle}, front view, clean background, product mockup, apparel template`,
-      width: '400',
-      height: '500',
-      seq: `${selectedStyle}-${selectedColor}`,
-      orientation: 'portrait'
-    });
-    return baseUrl + params.toString();
-  };
+<div className="relative w-[280px] sm:w-[340px] md:w-[400px]">
+    <div className="absolute top-0 bottom-0 left-4 right-4 border-l-4 border-r-4 border-dotted border-red-600 rounded-lg z-10" />
 
-  return (
-    <div className="bg-gray-800/50 rounded-xl p-6 border border-gray-700">
-      <h3 className="text-lg font-semibold mb-4">Design Preview</h3>
+    <Image
+      src="/tshirt-mockup.png"
+      alt="T-shirt"
+      width={400}
+      height={400}
+      className="mx-auto transition-all duration-500"
+      style={{ filter: shirtColor === 'white' ? 'none' : `brightness(0) saturate(100%) sepia(1) hue-rotate(${shirtColor === 'red' ? 0 : shirtColor === 'blue' ? 180 : shirtColor === 'yellow' ? 60 : 0}deg)`, transition: 'filter 0.5s ease' }}
+    />
+  </div>
 
-      <div className="relative bg-gray-900 rounded-lg aspect-[4/5] overflow-hidden border-2 border-gray-600">
-        {/* Shirt Background */}
-        <img
-          src={getShirtImage()}
-          alt={`${selectedStyle} preview`}
-          className="w-full h-full object-cover"
-        />
+  <div className="flex gap-4 mt-6 mb-4">
+    {colors.map((color) => (
+      <button
+        key={color.name}
+        onClick={() => setShirtColor(color.name)}
+        className={`w-8 h-8 rounded-full border-2 border-black ${shirtColor === color.name ? 'ring-2 ring-black' : ''}`}
+        style={{ backgroundColor: color.hex }}
+      ></button>
+    ))}
+  </div>
 
-        {/* Uploaded Design Overlay */}
-        {uploadedImage && (
-          <div
-            className="absolute cursor-move"
-            style={{
-              left: `${imagePosition.x}%`,
-              top: `${imagePosition.y}%`,
-              width: `${imageSize}%`,
-              transform: 'translate(-50%, -50%)'
-            }}
-            draggable
-            onDragEnd={(e) => {
-              const rect = e.currentTarget.parentElement?.getBoundingClientRect();
-              if (rect) {
-                const x = ((e.clientX - rect.left) / rect.width) * 100;
-                const y = ((e.clientY - rect.top) / rect.height) * 100;
-                setImagePosition({
-                  x: Math.max(15, Math.min(85, x)),
-                  y: Math.max(15, Math.min(85, y))
-                });
-              }
-            }}
-          >
-            <img
-              src={uploadedImage}
-              alt="Custom design"
-              className="w-full h-auto max-w-none"
-              style={{ aspectRatio: '1' }}
-            />
-          </div>
-        )}
+  <button className="bg-orange-500 text-white px-4 py-2 rounded-lg mb-6 hover:bg-orange-600 transition">Add Your Design</button>
 
-        {/* Design Controls */}
-        {uploadedImage && (
-          <div className="absolute bottom-4 left-4 right-4 bg-black/80 rounded-lg p-3">
-            <div className="flex items-center gap-4">
-              <label className="text-xs text-gray-300">Size:</label>
-              <input
-                type="range"
-                min="10"
-                max="50"
-                value={imageSize}
-                onChange={(e) => setImageSize(Number(e.target.value))}
-                className="flex-1"
-              />
-              <button
-                onClick={() => setImagePosition({ x: 50, y: 40 })}
-                className="!rounded-button bg-gray-700 px-3 py-1 text-xs hover:bg-gray-600 transition-colors"
-              >
-                Center
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {!uploadedImage && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center text-gray-400">
-            <i className="ri-image-line text-4xl mb-2 block"></i>
-            <p>Upload an image to see your design</p>
-          </div>
-        </div>
-      )}
+  <div className="bg-[#fff5e6] rounded-lg p-4 w-full max-w-[500px] text-center">
+    <h2 className="text-lg font-semibold mb-3">OUR DESIGNS</h2>
+    <div className="grid grid-cols-4 gap-3">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="bg-white border p-2 rounded shadow-sm text-sm">Sticker {i + 1}</div>
+      ))}
     </div>
-  );
-}
+  </div>
+</div>
+
+); };
+
+export default TShirtDesigner;
+

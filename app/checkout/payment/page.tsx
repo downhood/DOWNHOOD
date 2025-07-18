@@ -1,8 +1,13 @@
-
 'use client';
 
 import Link from 'next/link';
 import { useState } from 'react';
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 export default function PaymentPage() {
   const [paymentMethod, setPaymentMethod] = useState('upi');
@@ -18,6 +23,7 @@ export default function PaymentPage() {
     fampayId: ''
   });
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleFampayInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFampayData({
@@ -40,11 +46,102 @@ export default function PaymentPage() {
     });
   };
 
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handleRazorpayPayment = async () => {
+    setIsProcessing(true);
+    
+    const res = await loadRazorpayScript();
+    if (!res) {
+      alert('Razorpay SDK failed to load. Are you online?');
+      setIsProcessing(false);
+      return;
+    }
+
+    const options = {
+      key: 'rzp_test_9WaeLLJnOFJHag', // Replace with your Razorpay key
+      amount: 344700, // Amount in paise (₹3,447)
+      currency: 'INR',
+      name: 'REWA DOWNHOOD',
+      description: 'Custom Black T-Shirt Payment',
+      image: 'https://static.readdy.ai/image/22f84a0b2e3a2423de1c7f5b112fd4c1/3e1b892243d1d041e658e4081beb6363.jfif',
+      handler: function (response: any) {
+        console.log('Payment successful:', response);
+        setIsProcessing(false);
+        setShowSuccess(true);
+        setTimeout(() => {
+          setShowSuccess(false);
+        }, 3000);
+      },
+      prefill: {
+        name: 'Customer',
+        email: 'customer@example.com',
+        contact: '9999999999'
+      },
+      method: {
+        upi: true,
+        card: false,
+        netbanking: false,
+        wallet: false,
+        emi: false,
+        paylater: false
+      },
+      config: {
+        display: {
+          blocks: {
+            utib: {
+              name: 'Pay using UPI',
+              instruments: [
+                {
+                  method: 'upi',
+                  flows: ['collect', 'intent']
+                }
+              ]
+            }
+          },
+          sequence: ['block.utib'],
+          preferences: {
+            show_default_blocks: false
+          }
+        }
+      },
+      theme: {
+        color: '#000000'
+      },
+      modal: {
+        ondismiss: function() {
+          setIsProcessing(false);
+          console.log('Payment modal closed');
+        }
+      }
+    };
+
+    const paymentObject = new window.Razorpay(options);
+    paymentObject.open();
+  };
+
   const handlePlaceOrder = () => {
-    setShowSuccess(true);
-    setTimeout(() => {
-      setShowSuccess(false);
-    }, 3000);
+    if (paymentMethod === 'upi' && isUpiFormValid) {
+      handleRazorpayPayment();
+    } else {
+      // Handle other payment methods
+      setIsProcessing(true);
+      setTimeout(() => {
+        setIsProcessing(false);
+        setShowSuccess(true);
+        setTimeout(() => {
+          setShowSuccess(false);
+        }, 3000);
+      }, 2000);
+    }
   };
 
   const validUpiIds = ['8462912222@axl', 'anaskhan05092007@axl'];
@@ -92,10 +189,10 @@ export default function PaymentPage() {
           <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
             <i className="ri-check-line text-3xl text-white"></i>
           </div>
-          <h1 className="text-3xl font-bold mb-4">Order Placed Successfully!</h1>
-          <p className="text-gray-400 mb-8">Thank you for your order. You'll receive a confirmation email shortly.</p>
+          <h1 className="text-3xl font-bold mb-4">Payment Successful!</h1>
+          <p className="text-gray-400 mb-8">Thank you for your payment. Your order has been confirmed.</p>
           <Link href="/">
-            <button className="!rounded-button bg-gradient-to-r from-white to-gray-200 text-black px-8 py-3 font-semibold hover:from-gray-100 hover:to-gray-300 transition-all duration-300">
+            <button className="rounded-lg bg-gradient-to-r from-white to-gray-200 text-black px-8 py-3 font-semibold hover:from-gray-100 hover:to-gray-300 transition-all duration-300">
               Continue Shopping
             </button>
           </Link>
@@ -161,7 +258,7 @@ export default function PaymentPage() {
                       <i className="ri-smartphone-line text-xl"></i>
                       <div>
                         <span className="block font-medium">UPI Payment</span>
-                        <span className="text-sm text-gray-400">Google Pay, PhonePe, Paytm, etc.</span>
+                        <span className="text-sm text-gray-400">Powered by Razorpay - Google Pay, PhonePe, Paytm, etc.</span>
                       </div>
                     </div>
                   </label>
@@ -205,6 +302,16 @@ export default function PaymentPage() {
               {paymentMethod === 'upi' && (
                 <div className="space-y-6">
                   <h3 className="text-lg font-semibold">UPI Payment Details</h3>
+                  
+                  <div className="bg-blue-900/20 border border-blue-700/50 rounded-lg p-4 mb-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <i className="ri-information-line text-blue-400"></i>
+                      <span className="text-blue-400 font-medium">Razorpay Secure Payment</span>
+                    </div>
+                    <p className="text-sm text-blue-300">
+                      You'll be redirected to Razorpay's secure payment gateway to complete your UPI payment.
+                    </p>
+                  </div>
                   
                   <div className="relative">
                     <label className="block text-sm font-medium mb-2">UPI ID *</label>
@@ -355,52 +462,4 @@ export default function PaymentPage() {
                     <p className="text-sm text-gray-400">Size: M • Qty: 1</p>
                     <p className="font-semibold">₹2,499</p>
                   </div>
-                </div>
-              </div>
-              
-              <div className="space-y-3 mb-6 pt-4 border-t border-gray-600">
-                <div className="flex justify-between">
-                  <span>Subtotal</span>
-                  <span>₹2,499</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Shipping</span>
-                  <span>₹499</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tax (GST)</span>
-                  <span>₹449</span>
-                </div>
-                <div className="border-t border-gray-600 pt-3">
-                  <div className="flex justify-between font-semibold text-lg">
-                    <span>Total</span>
-                    <span>₹3,447</span>
-                  </div>
-                </div>
-              </div>
-              
-              <button 
-                onClick={handlePlaceOrder}
-                className={`!rounded-button w-full py-4 text-lg font-bold transition-all duration-300 ${
-                  (paymentMethod === 'upi' && isUpiFormValid) || (paymentMethod === 'bank' && isBankFormValid) || (paymentMethod === 'fampay' && isFampayFormValid)
-                    ? 'bg-gradient-to-r from-white to-gray-200 text-black hover:from-gray-100 hover:to-gray-300 transform hover:scale-105' 
-                    : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                }`}
-                disabled={(paymentMethod === 'upi' && !isUpiFormValid) || (paymentMethod === 'bank' && !isBankFormValid) || (paymentMethod === 'fampay' && !isFampayFormValid)}
-              >
-                Place Order
-              </button>
-              
-              <Link href="/checkout/address" className="block mt-4">
-                <button className="!rounded-button w-full bg-gray-700 border border-gray-600 py-3 hover:bg-gray-600 transition-colors">
-                  Back to Address
-                </button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-                }
-    
+           

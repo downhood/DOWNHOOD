@@ -31,92 +31,58 @@ export default function PaymentPage() {
   };
 
   const handlePlaceOrder = async () => {
-    if (paymentMethod !== 'upi' || !isUpiFormValid) return;
+  if (paymentMethod !== 'upi' || !isUpiFormValid) return;
 
-    const res = await loadRazorpayScript();
-    if (!res) {
-      alert('Failed to load Razorpay. Please try again.');
+  const res = await loadRazorpayScript();
+  if (!res) {
+    alert('Razorpay SDK failed to load. Are you online?');
+    return;
+  }
+
+  try {
+    const response = await fetch('/api/payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: 3447 }),
+    });
+
+    const data = await response.json();
+    console.log('Fetched order ID:', data.orderId);
+
+    if (!data.orderId) {
+      alert('Order ID not found from server');
       return;
     }
 
-    try {
-      const response = await fetch('/api/payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: 3447 }), // ₹3,447
-      });
+    const options = {
+      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+      amount: 344700,
+      currency: 'INR',
+      name: 'REWA DOWNHOOD',
+      order_id: data.orderId,
+      handler: function (response: any) {
+        console.log('Payment successful:', response);
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+      },
+      prefill: {
+        email: 'test@example.com',
+        contact: '9999999999',
+      },
+      method: {
+        upi: true,
+        card: false,
+        netbanking: false,
+      },
+      theme: {
+        color: '#121212',
+      },
+    };
 
-      const data = await response.json();
-      if (!data.orderId) {
-        alert('Failed to create order');
-        return;
-      }
-
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: 344700, // in paise
-        currency: 'INR',
-        name: 'REWA DOWNHOOD',
-        description: 'Order Payment',
-        order_id: data.orderId,
-        handler: function (response: any) {
-          console.log('Payment success', response);
-          setShowSuccess(true);
-          setTimeout(() => setShowSuccess(false), 3000);
-        },
-        prefill: {
-          email: 'test@example.com',
-          contact: '9999999999',
-        },
-        theme: {
-          color: '#1f2937',
-        },
-        method: {
-          upi: true,
-          card: false,
-          netbanking: false,
-        },
-      };
-
-      const rzp = new (window as any).Razorpay(options);
-      rzp.open();
-    } catch (err) {
-      console.error('Payment error', err);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-black text-white p-6">
-      <h1 className="text-3xl font-bold mb-4">UPI Payment</h1>
-
-      <div className="max-w-md space-y-4">
-        <input
-          type="text"
-          name="upiId"
-          value={upiData.upiId}
-          onChange={handleUpiInputChange}
-          placeholder="Enter your UPI ID"
-          className="w-full p-3 rounded-lg bg-gray-800 border border-gray-600 text-white focus:outline-none"
-        />
-
-        <button
-          onClick={handlePlaceOrder}
-          disabled={!isUpiFormValid}
-          className={`w-full py-3 rounded-lg font-bold ${
-            isUpiFormValid
-              ? 'bg-green-500 hover:bg-green-600 text-white'
-              : 'bg-gray-700 text-gray-400 cursor-not-allowed'
-          }`}
-        >
-          Pay with Razorpay
-        </button>
-
-        {showSuccess && (
-          <div className="mt-4 text-green-400 text-lg font-semibold">
-            ✅ Payment Successful!
-          </div>
-        )}
-      </div>
-    </div>
-  );
+    const rzp = new (window as any).Razorpay(options);
+    rzp.open();
+  } catch (error) {
+    console.error('Payment error:', error);
+    alert('Payment failed: ' + error.message);
   }
+};

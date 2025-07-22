@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
@@ -16,6 +16,12 @@ export default function PaymentPage() {
   const [upiId, setUpiId] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [razorpayKey, setRazorpayKey] = useState('');
+
+  useEffect(() => {
+    // This loads the Razorpay public key from env variable
+    setRazorpayKey(process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || '');
+  }, []);
 
   const isValidUpi = (id: string) => /^[\w.-]+@[\w.-]+$/.test(id);
 
@@ -45,7 +51,7 @@ export default function PaymentPage() {
       if (!data.orderId) throw new Error('No order ID received');
 
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
+        key: razorpayKey,
         amount: 344700, // in paise
         currency: 'INR',
         name: 'REWA DOWNHOOD',

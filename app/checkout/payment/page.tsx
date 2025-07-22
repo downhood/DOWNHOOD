@@ -1,9 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { useState } from 'react';
 
-// ✅ Razorpay script loader
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
     const script = document.createElement('script');
@@ -15,107 +13,98 @@ const loadRazorpayScript = () => {
 };
 
 export default function PaymentPage() {
-  const [paymentMethod, setPaymentMethod] = useState('upi');
-  const [upiData, setUpiData] = useState({ upiId: '' });
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [upiId, setUpiId] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
-  const isValidUpiId = (upiId: string) => {
-    const upiRegex = /^[a-zA-Z0-9._\-]{2,256}@[a-zA-Z]{2,64}$/;
-    return upiRegex.test(upiId);
-  };
+  const isValidUpi = (id: string) => /^[\w.-]+@[\w.-]+$/.test(id);
 
-  const isUpiFormValid = isValidUpiId(upiData.upiId);
-
-  const handleUpiInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setUpiData({ ...upiData, [e.target.name]: e.target.value });
-  };
-
-  const handlePlaceOrder = async () => {
-    if (paymentMethod !== 'upi' || !isUpiFormValid) return;
-
-    const res = await loadRazorpayScript();
-    if (!res) {
-      alert('Razorpay SDK failed to load. Are you online?');
+  const handlePay = async () => {
+    if (!isValidUpi(upiId)) {
+      alert('Please enter a valid UPI ID');
       return;
     }
 
+    const res = await loadRazorpayScript();
+    if (!res) {
+      alert('Razorpay SDK failed to load');
+      return;
+    }
+
+    setIsProcessing(true);
+
     try {
-      const response = await fetch('/api/payment', {
+      const orderRes = await fetch('/api/payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: 3447 }),
+        body: JSON.stringify({ amount: 3447 }), // ₹3447
       });
 
-      const data = await response.json();
-      console.log('Fetched order ID:', data.orderId);
+      const data = await orderRes.json();
 
-      if (!data.orderId) {
-        alert('Order ID not found from server');
-        return;
-      }
+      if (!data.orderId) throw new Error('No order ID received');
 
       const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: 344700,
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
+        amount: 344700, // in paise
         currency: 'INR',
         name: 'REWA DOWNHOOD',
+        description: 'T-shirt Purchase',
         order_id: data.orderId,
         handler: function (response: any) {
-          console.log('Payment successful:', response);
-          setShowSuccess(true);
-          setTimeout(() => setShowSuccess(false), 3000);
+          console.log('Payment success:', response);
+          setPaymentSuccess(true);
         },
         prefill: {
           email: 'test@example.com',
           contact: '9999999999',
+          method: 'upi',
         },
-        method: {
-          upi: true,
-          card: false,
-          netbanking: false,
+        notes: {
+          upi_id: upiId,
         },
-        theme: {
-          color: '#121212',
-        },
+        theme: { color: '#121212' },
       };
 
       const rzp = new (window as any).Razorpay(options);
       rzp.open();
-    } catch (error: any) {
-      console.error('Payment error:', error);
-      alert('Payment failed: ' + error.message);
+    } catch (err: any) {
+      alert('Payment failed: ' + err.message);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  // ✅ Render UPI Input + Button
-  return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center gap-6 px-6">
-      <h1 className="text-3xl font-bold">UPI Payment</h1>
-
-      <input
-        type="text"
-        name="upiId"
-        value={upiData.upiId}
-        onChange={handleUpiInputChange}
-        placeholder="Enter your UPI ID"
-        className="w-full max-w-md px-4 py-3 rounded-md bg-gray-800 text-white border border-gray-600 focus:outline-none"
-      />
-
-      <button
-        onClick={handlePlaceOrder}
-        disabled={!isUpiFormValid}
-        className={`w-full max-w-md py-3 rounded-md text-white font-semibold ${
-          isUpiFormValid ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-500 cursor-not-allowed'
-        }`}
-      >
-        Pay with Razorpay
-      </button>
-
-      {showSuccess && (
-        <div className="text-green-400 font-semibold text-lg mt-4">
-          ✅ Payment Successful!
+  if (paymentSuccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-white bg-black">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold">Payment Successful ✅</h1>
+          <p className="mt-2">Thank you for your order.</p>
         </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center text-white bg-black p-4">
+      <div className="w-full max-w-md space-y-4">
+        <h1 className="text-2xl font-bold">UPI Payment</h1>
+        <input
+          type="text"
+          placeholder="Enter your UPI ID"
+          value={upiId}
+          onChange={(e) => setUpiId(e.target.value)}
+          className="w-full p-3 rounded bg-gray-800 border border-gray-600"
+        />
+        <button
+          onClick={handlePay}
+          disabled={isProcessing}
+          className="w-full py-3 bg-white text-black rounded hover:bg-gray-200 font-semibold"
+        >
+          {isProcessing ? 'Processing...' : 'Pay with Razorpay'}
+        </button>
+      </div>
     </div>
   );
 }
